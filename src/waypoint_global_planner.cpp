@@ -41,9 +41,9 @@ void WaypointGlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DRO
     pnh.param("waypoints_per_meter", waypoints_per_meter_, 20);
 
     // initialize publishers and subscribers
-    waypoint_sub_ = pnh.subscribe("/clicked_point", 100, &WaypointGlobalPlanner::waypointCallback, this);
-    external_path_sub_ = pnh.subscribe("external_path", 1, &WaypointGlobalPlanner::externalPathCallback, this);
-    waypoint_marker_pub_ = pnh.advertise<visualization_msgs::MarkerArray>("waypoints", 1);
+    //waypoint_sub_ = pnh.subscribe("/clicked_point", 100, &WaypointGlobalPlanner::waypointCallback, this);
+    external_path_sub_ = pnh.subscribe("/move_base/WaypointGlobalPlanner/external_path", 1, &WaypointGlobalPlanner::externalPathCallback, this);
+    //waypoint_marker_pub_ = pnh.advertise<visualization_msgs::MarkerArray>("waypoints", 1);
     goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1);
     plan_pub_ = pnh.advertise<nav_msgs::Path>("global_plan", 1);
 
@@ -64,7 +64,9 @@ bool WaypointGlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start_pos
   interpolatePath(path_);
   plan_pub_.publish(path_);
   plan = path_.poses;
-  ROS_INFO("Published global plan");
+  int a = plan.size();
+  // ROS_INFO("plan.size() = %d", a);
+  // ROS_INFO("Published global plan");
   return true;
 }
 
@@ -82,8 +84,12 @@ void WaypointGlobalPlanner::waypointCallback(const geometry_msgs::PointStamped::
   waypoints_.back().header = waypoint->header;
   waypoints_.back().pose.position = waypoint->point;
   waypoints_.back().pose.orientation.w = 1.0;
+  
+  for (int i=0; i < waypoints_.size(); i++)
+  {
+    printf("waypoints in waypointCallback: %f %f %f \n", waypoints_[i].pose.position.x,waypoints_[i].pose.position.y, waypoints_[i].pose.position.z);
+  }
 
-  // create and publish markers
   createAndPublishMarkersFromPath(waypoints_);
 
   if (waypoints_.size() < 2)
@@ -143,12 +149,22 @@ void WaypointGlobalPlanner::interpolatePath(nav_msgs::Path& path)
 
 void WaypointGlobalPlanner::externalPathCallback(const nav_msgs::PathConstPtr& plan)
 {
+  printf("plans receive success\n");
+
   path_.poses.clear();
   clear_waypoints_ = true;
   path_.header = plan->header;
   path_.poses = plan->poses;
-  createAndPublishMarkersFromPath(path_.poses);
+  // for (int i = 0; i < plan->poses.size(); i++)
+  // {
+  //   ROS_INFO_STREAM("plan->poses.pose x = "<<plan->poses[i].pose.position.x);
+  //   ROS_INFO_STREAM("plan->poses.pose y = "<<plan->poses[i].pose.position.y);
+  // }
+
+  //createAndPublishMarkersFromPath(path_.poses);
   goal_pub_.publish(path_.poses.back());
+
+  ROS_INFO_STREAM("goal pub");
 }
 
 
