@@ -162,7 +162,7 @@ void WaypointGlobalPlanner::externalPathCallback(const nav_msgs::PathConstPtr& p
   // }
 
   //createAndPublishMarkersFromPath(path_.poses);
-  goal_pub_.publish(path_.poses.back());
+  // goal_pub_.publish(path_.poses.back());
 
   ROS_INFO_STREAM("goal pub");
 }
