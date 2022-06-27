@@ -184,17 +184,12 @@ namespace waypoint_global_planner
     path.poses = temp_path;
   }
 
-<<<<<<< HEAD
   void WaypointGlobalPlanner::externalPathCallback(const nav_msgs::PathConstPtr &plan)
   {
     path_.poses.clear();
     clear_waypoints_ = true;
     path_.header = plan->header;
     path_.poses = plan->poses;
-=======
-  //createAndPublishMarkersFromPath(path_.poses);
-  // goal_pub_.publish(path_.poses.back());
->>>>>>> de18f5d3fdc66b34ced1f3b94885f6323275b59a
 
     for (int i = 0; i < path_.poses.size(); i++)
     {
