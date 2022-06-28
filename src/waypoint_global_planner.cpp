@@ -55,15 +55,19 @@ namespace waypoint_global_planner
   bool WaypointGlobalPlanner::makePlan(const geometry_msgs::PoseStamped &start_pose,
                                        const geometry_msgs::PoseStamped &goal, std::vector<geometry_msgs::PoseStamped> &plan)
   {
-    ROS_INFO("makePlan do it");
-    // for (int i = 0; i < path_.poses.size(); i++)
-    // {
-    //   ROS_INFO("Position-> x: [%f], y: [%f]", path_.poses[i].pose.position.x, path_.poses[i].pose.position.y);
-    // }
-    // path_.poses.insert(path_.poses.begin(), start_pose);
-    interpolatePath(pose_);
-    plan_pub_.publish(path_);
-    plan = path_.poses;
+    nav_msgs::Path path;
+    ROS_INFO("start pose x : [%f] y : [%f]", start_pose.pose.position.x, start_pose.pose.position.y);
+    ROS_INFO("path.poses[0] x : [%f ty : [%f]", path_.poses.front().pose.position.x, path_.poses.front().pose.position.y);
+
+    path.poses.insert(path.poses.begin(), start_pose);
+    path.poses.insert(path.poses.begin() + 1, path_.poses.front());
+    ROS_DEBUG("path size : [%d]", path.poses.size());
+    interpolatePath(path);
+    // ROS_INFO("path size interpolate: [%d]", path.poses.size());
+    plan_pub_.publish(path);
+    plan = path.poses;
+
+    // ROS_INFO("makePlan do it");
     return true;
   }
 
@@ -79,13 +83,17 @@ namespace waypoint_global_planner
       // ROS_INFO("Position-> x: [%f], y: [%f]", odom_x, odom_y);
 
       if (path_.poses.size() == 0)
-        ROS_INFO("End PathPlanning");
+        ROS_DEBUG("there are no path");
       else
       {
         if (confirmDist(odom_x, odom_y))
         {
           ROS_INFO("Publish new goal");
-          goal_pub_.publish(pose_);
+          // pose_.header = path_.poses[0].header;
+          // pose_.pose.position.x = odom_x;
+          // pose_.pose.position.y = odom_y;
+          goal_pub_.publish(path_.poses.front());
+          path_.poses.erase(path_.poses.begin()); // publish 한 path 삭제
         }
       }
     }
@@ -94,18 +102,16 @@ namespace waypoint_global_planner
   bool WaypointGlobalPlanner::confirmDist(double odom_x, double odom_y)
   {
     double x_dist, y_dist, dist;
-    x_dist = pow(odom_x - pose_.pose.position.x, 2);
-    y_dist = pow(odom_y - pose_.pose.position.y, 2);
+    x_dist = pow(odom_x - path_.poses.front().pose.position.x, 2);
+    y_dist = pow(odom_y - path_.poses.front().pose.position.y, 2);
     dist = sqrt(x_dist + y_dist);
 
     ROS_DEBUG("odom = [%f]\t[%f]", odom_x, odom_y);
     ROS_DEBUG("pose = [%f]\t[%f]", pose_.pose.position.x, pose_.pose.position.y);
-    ROS_INFO("dist = [%f]", dist);
+    ROS_DEBUG("dist = [%f]", dist);
 
     if (dist < goal_range_)
     {
-      path_.poses.erase(path_.poses.begin());
-      pose_ = path_.poses.front();
       return true;
     }
     else
@@ -196,8 +202,7 @@ namespace waypoint_global_planner
       ROS_DEBUG("Position-> x: [%f], y: [%f]", path_.poses[i].pose.position.x, path_.poses[i].pose.position.y);
     }
 
-    pose_ = path_.poses.front();
-    goal_pub_.publish(pose_);
+    goal_pub_.publish(path_.poses.front());
     // createAndPublishMarkersFromPath(path_.poses);
   }
 
